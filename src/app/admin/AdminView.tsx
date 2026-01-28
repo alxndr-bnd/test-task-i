@@ -61,8 +61,6 @@ type RankedCourseView = {
   isSponsored: boolean;
   isEditorsChoice: boolean;
   isAccredited: boolean;
-  promoStart: string | null;
-  promoEnd: string | null;
   breakdown: {
     qualityScore: number;
     popularityScore: number;
@@ -95,6 +93,7 @@ type Props = {
   settings: SettingsView;
   ranked: RankedCourseView[];
   qualityFloor: number;
+  promoAppliedCount: number;
 };
 
 const themeTokens = {
@@ -116,7 +115,12 @@ const themeTokens = {
   },
 } as const;
 
-export default function AdminView({ settings, ranked, qualityFloor }: Props) {
+export default function AdminView({
+  settings,
+  ranked,
+  qualityFloor,
+  promoAppliedCount,
+}: Props) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const t = themeTokens[theme];
   const [coursesState, setCoursesState] = useState(ranked);
@@ -269,6 +273,9 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
           These parameters control how the ranking score is computed in the
           PoC.
         </p>
+        <div style={{ marginBottom: "10px", color: t.muted }}>
+          Promotion cap usage: {promoAppliedCount}/{settings.promotionCap}
+        </div>
         <div
           style={{
             display: "grid",
