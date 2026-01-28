@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ranking PoC
 
-## Getting Started
+Prototype for a course ranking system with explainable scoring, admin controls, and seeded demo data.
 
-First, run the development server:
+Requirements: `docs/prototype-requirements.md`
 
+## Local setup
+
+1) Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2) Initialize database and seed demo data
+```bash
+npx prisma migrate dev
+npm run db:seed
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3) Run the app
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open http://localhost:3000
 
-## Learn More
+## Admin
 
-To learn more about Next.js, take a look at the following resources:
+- User view: `/`
+- Admin view: `/admin`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Admin lets you edit ranking weights, quality floor, and course flags (Sponsored / Editor’s Choice / Accredited) with promo windows.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Demo data consistency
 
-## Deploy on Vercel
+Yes — the seed data is deterministic.
+It uses a fixed seed and a fixed base date, so local and production will generate the same ~50 courses.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To reset the dataset at any time:
+```bash
+npm run db:seed
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- Sorting options change the list order but do not change the computed ranking score.
+- Ranking calculation details are shown in the UI for PoC transparency only.

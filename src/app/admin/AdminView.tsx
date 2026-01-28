@@ -58,6 +58,11 @@ type RankedCourseView = {
   ratingCount: number;
   enrollments: number;
   lastUpdatedAt: string;
+  isSponsored: boolean;
+  isEditorsChoice: boolean;
+  isAccredited: boolean;
+  promoStart: string | null;
+  promoEnd: string | null;
   breakdown: {
     qualityScore: number;
     popularityScore: number;
@@ -114,6 +119,8 @@ const themeTokens = {
 export default function AdminView({ settings, ranked, qualityFloor }: Props) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const t = themeTokens[theme];
+  const [coursesState, setCoursesState] = useState(ranked);
+  const [courseStatus, setCourseStatus] = useState<Record<string, string>>({});
   const [form, setForm] = useState(settings);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle"
@@ -162,6 +169,56 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
       window.location.reload();
     } catch (error) {
       setStatus("error");
+    }
+  };
+
+  const updateCourse = (id: string, patch: Partial<RankedCourseView>) => {
+    setCoursesState((prev) =>
+      prev.map((course) =>
+        course.id === id ? { ...course, ...patch } : course
+      )
+    );
+  };
+
+  const toDateInput = (value: string | null) =>
+    value ? value.slice(0, 10) : "";
+
+  const fromDateInput = (value: string) => (value ? value : null);
+
+  const saveCourse = async (course: RankedCourseView) => {
+    setCourseStatus((prev) => ({ ...prev, [course.id]: "saving" }));
+    try {
+      const res = await fetch("/api/courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: course.id,
+          isSponsored: course.isSponsored,
+          isEditorsChoice: course.isEditorsChoice,
+          isAccredited: course.isAccredited,
+          promoStart: course.promoStart,
+          promoEnd: course.promoEnd,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setCourseStatus((prev) => ({
+          ...prev,
+          [course.id]: data.error || "Save failed",
+        }));
+        return;
+      }
+      setCourseStatus((prev) => ({ ...prev, [course.id]: "saved" }));
+      setTimeout(
+        () =>
+          setCourseStatus((prev) => ({
+            ...prev,
+            [course.id]: "",
+          })),
+        1500
+      );
+    } catch (error) {
+      setCourseStatus((prev) => ({ ...prev, [course.id]: "Save failed" }));
     }
   };
 
@@ -311,7 +368,7 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
       <section>
         <h2>Ranking Breakdown</h2>
         <div style={{ display: "grid", gap: "12px" }}>
-          {ranked.map((course, index) => (
+          {coursesState.map((course, index) => (
             <div
               key={course.id}
               style={{
@@ -328,6 +385,115 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
                 Rating {course.ratingAvg.toFixed(1)} ({course.ratingCount}) •
                 Enrollments {course.enrollments} • Updated{" "}
                 {new Date(course.lastUpdatedAt).toDateString()}
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: "10px",
+                  margin: "8px 0 6px",
+                  fontSize: "12px",
+                  color: t.muted,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={course.isSponsored}
+                    onChange={(event) =>
+                      updateCourse(course.id, {
+                        isSponsored: event.target.checked,
+                      })
+                    }
+                  />{" "}
+                  Sponsored
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={course.isEditorsChoice}
+                    onChange={(event) =>
+                      updateCourse(course.id, {
+                        isEditorsChoice: event.target.checked,
+                      })
+                    }
+                  />{" "}
+                  Editor’s Choice
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={course.isAccredited}
+                    onChange={(event) =>
+                      updateCourse(course.id, {
+                        isAccredited: event.target.checked,
+                      })
+                    }
+                  />{" "}
+                  Accredited
+                </label>
+                <label>
+                  Promo start
+                  <input
+                    type="date"
+                    value={toDateInput(course.promoStart)}
+                    onChange={(event) =>
+                      updateCourse(course.id, {
+                        promoStart: fromDateInput(event.target.value),
+                      })
+                    }
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      border: `1px solid ${t.border}`,
+                      borderRadius: "6px",
+                      padding: "4px 6px",
+                      background: t.card,
+                      color: t.text,
+                    }}
+                  />
+                </label>
+                <label>
+                  Promo end
+                  <input
+                    type="date"
+                    value={toDateInput(course.promoEnd)}
+                    onChange={(event) =>
+                      updateCourse(course.id, {
+                        promoEnd: fromDateInput(event.target.value),
+                      })
+                    }
+                    style={{
+                      display: "block",
+                      marginTop: "4px",
+                      border: `1px solid ${t.border}`,
+                      borderRadius: "6px",
+                      padding: "4px 6px",
+                      background: t.card,
+                      color: t.text,
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => saveCourse(course)}
+                  style={{
+                    height: "32px",
+                    alignSelf: "end",
+                    borderRadius: "999px",
+                    border: `1px solid ${t.border}`,
+                    background: t.card,
+                    color: t.text,
+                    cursor: "pointer",
+                  }}
+                >
+                  Save course
+                </button>
+                {courseStatus[course.id] && (
+                  <span style={{ alignSelf: "end" }}>
+                    {courseStatus[course.id]}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "12px", color: t.muted }}>
                 Calculated values:{" "}

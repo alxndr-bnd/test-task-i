@@ -80,6 +80,11 @@ const makeCourse = (index: number): CourseSeed => {
   const ratingCount = rand(5, 800);
   const enrollments = rand(20, 20000);
   const days = rand(0, 720);
+  const promoState = rand(0, 2); // 0 none, 1 active, 2 expired
+  const promoStart =
+    promoState === 1 ? daysAgo(rand(1, 10)) : promoState === 2 ? daysAgo(40) : null;
+  const promoEnd =
+    promoState === 1 ? daysAgo(-rand(3, 14)) : promoState === 2 ? daysAgo(10) : null;
 
   return {
     title: `Course ${index + 1}: ${pick([
@@ -96,11 +101,11 @@ const makeCourse = (index: number): CourseSeed => {
     durationMinutes: rand(60, 1200),
     hasPractice: random() < 0.5,
     hasCertificate: random() < 0.6,
-    isAccredited: random() < 0.25,
-    isEditorsChoice: random() < 0.15,
-    isSponsored: random() < 0.15,
-    promoStart: random() < 0.2 ? daysAgo(rand(1, 30)) : null,
-    promoEnd: random() < 0.2 ? daysAgo(-rand(1, 30)) : null,
+    isAccredited: random() < 0.3,
+    isEditorsChoice: random() < 0.18,
+    isSponsored: random() < 0.18,
+    promoStart,
+    promoEnd,
     ratingAvg,
     ratingCount,
     enrollments,
