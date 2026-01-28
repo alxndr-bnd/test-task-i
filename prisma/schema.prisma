@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id              String   @id @default(cuid())
+  title           String
+  category        String
+  language        String
+  level           String
+  priceCents      Int
+  isFree          Boolean
+  durationMinutes Int
+  hasPractice     Boolean
+  hasCertificate  Boolean
+  isAccredited    Boolean
+  isEditorsChoice Boolean
+  isSponsored     Boolean
+  promoStart      DateTime?
+  promoEnd        DateTime?
+  ratingAvg       Float
+  ratingCount     Int
+  enrollments     Int
+  lastUpdatedAt   DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Settings {
+  id                      String   @id @default(cuid())
+  qualityWeight           Float
+  popularityWeight        Float
+  freshnessWeight         Float
+  editorialWeight         Float
+  qualityFloor            Float
+  promotionCap            Int
+  sponsoredBoost          Float
+  editorsChoiceBoost      Float
+  minRatingsForConfidence Int
+  freshnessMaxAgeDays     Int
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
