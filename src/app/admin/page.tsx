@@ -71,8 +71,6 @@ export default async function AdminPage() {
           isSponsored: course.isSponsored,
           isEditorsChoice: course.isEditorsChoice,
           isAccredited: course.isAccredited,
-          promoStart: course.promoStart ? course.promoStart.toISOString() : null,
-          promoEnd: course.promoEnd ? course.promoEnd.toISOString() : null,
           breakdown: course.breakdown,
         }))}
         qualityFloor={settings.qualityFloor}
