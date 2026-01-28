@@ -23,7 +23,6 @@
 # misc
 .DS_Store
 *.pem
-.idea/
 dev.db
 
 # debug
