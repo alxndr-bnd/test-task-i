@@ -1,5 +1,56 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
+type HoverLabelProps = {
+  label: string;
+  description: string;
+  textColor: string;
+  borderColor: string;
+  bg: string;
+};
+
+function HoverLabel({
+  label,
+  description,
+  textColor,
+  borderColor,
+  bg,
+}: HoverLabelProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span
+      style={{ position: "relative", fontWeight: 600, color: textColor }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      {label}
+      {open && (
+        <span
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "12px",
+            transform: "translateY(-100%)",
+            background: bg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: "8px",
+            padding: "6px 8px",
+            fontSize: "11px",
+            whiteSpace: "nowrap",
+            zIndex: 20,
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)",
+          }}
+        >
+          {description}
+        </span>
+      )}
+    </span>
+  );
+}
+
 type RankedCourseView = {
   id: string;
   title: string;
@@ -61,7 +112,58 @@ const themeTokens = {
 } as const;
 
 export default function AdminView({ settings, ranked, qualityFloor }: Props) {
-  const t = themeTokens.light;
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const t = themeTokens[theme];
+  const [form, setForm] = useState(settings);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle"
+  );
+
+  const fields = useMemo(
+    () => [
+      ["qualityWeight", "Quality weight"],
+      ["popularityWeight", "Popularity weight"],
+      ["freshnessWeight", "Freshness weight"],
+      ["editorialWeight", "Editorial weight"],
+      ["qualityFloor", "Quality floor"],
+      ["promotionCap", "Promotion cap"],
+      ["sponsoredBoost", "Sponsored boost"],
+      ["editorsChoiceBoost", "Editor’s Choice boost"],
+      ["minRatingsForConfidence", "Min ratings for confidence"],
+      ["freshnessMaxAgeDays", "Freshness max age (days)"],
+    ],
+    []
+  );
+
+  const fieldHelp: Record<string, string> = {
+    qualityWeight: "Weight for Quality score in Base.",
+    popularityWeight: "Weight for Popularity score in Base.",
+    freshnessWeight: "Weight for Freshness score in Base.",
+    editorialWeight: "Multiplier applied to editorial boosts.",
+    qualityFloor: "Minimum rating required for promotion.",
+    promotionCap: "Max promoted courses per page.",
+    sponsoredBoost: "Boost added for Sponsored courses.",
+    editorsChoiceBoost: "Boost added for Editor’s Choice.",
+    minRatingsForConfidence: "Rating count threshold for confidence.",
+    freshnessMaxAgeDays: "Age (days) at which freshness becomes 0.",
+  };
+
+  const onSave = async () => {
+    setStatus("saving");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 1500);
+      window.location.reload();
+    } catch (error) {
+      setStatus("error");
+    }
+  };
 
   return (
     <main
@@ -73,7 +175,33 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
         color: t.text,
       }}
     >
-      <h1 style={{ marginBottom: "12px" }}>Admin Panel (Read-only)</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginBottom: "12px",
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Admin Panel</h1>
+        <button
+          type="button"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          style={{
+            height: "38px",
+            padding: "0 16px",
+            borderRadius: "999px",
+            border: `1px solid ${t.border}`,
+            background: t.card,
+            color: t.text,
+            cursor: "pointer",
+          }}
+        >
+          Switch to {theme === "dark" ? "light" : "dark"}
+        </button>
+      </div>
       <section
         style={{
           border: `1px solid ${t.border}`,
@@ -84,17 +212,101 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
         }}
       >
         <h2 style={{ marginTop: 0 }}>Ranking Settings</h2>
-        <div>Quality weight: {settings.qualityWeight}</div>
-        <div>Popularity weight: {settings.popularityWeight}</div>
-        <div>Freshness weight: {settings.freshnessWeight}</div>
-        <div>Editorial weight: {settings.editorialWeight}</div>
-        <div>Quality floor: {settings.qualityFloor}</div>
-        <div>Promotion cap: {settings.promotionCap}</div>
-        <div>Sponsored boost: {settings.sponsoredBoost}</div>
-        <div>Editor’s Choice boost: {settings.editorsChoiceBoost}</div>
-        <div>Min ratings for confidence: {settings.minRatingsForConfidence}</div>
-        <div>Freshness max age (days): {settings.freshnessMaxAgeDays}</div>
+        <p style={{ marginTop: 0, color: t.muted }}>
+          These parameters control how the ranking score is computed in the
+          PoC.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          {fields.map(([key, label]) => (
+            <label
+              key={key}
+              style={{ display: "grid", gap: "6px", fontSize: "13px" }}
+            >
+              <span style={{ color: t.muted, display: "flex", gap: "6px" }}>
+                {label}
+                <HoverLabel
+                  label="?"
+                  description={fieldHelp[key]}
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={form[key as keyof SettingsView]}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    [key]: Number(event.target.value),
+                  }))
+                }
+                style={{
+                  border: `1px solid ${t.border}`,
+                  borderRadius: "8px",
+                  padding: "6px 8px",
+                }}
+              />
+            </label>
+          ))}
+        </div>
+        <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={onSave}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "999px",
+              border: `1px solid ${t.border}`,
+              background: t.card,
+              color: t.text,
+              cursor: "pointer",
+            }}
+          >
+            Save settings
+          </button>
+          {status === "saving" && <span>Saving...</span>}
+          {status === "saved" && <span>Saved</span>}
+          {status === "error" && <span>Save failed</span>}
+        </div>
       </section>
+      <div
+        style={{
+          position: "fixed",
+          right: "20px",
+          top: "220px",
+          width: "340px",
+          padding: "16px",
+          borderRadius: "14px",
+          border: `1px solid ${t.border}`,
+          borderLeft: `6px solid ${t.accent}`,
+          background: theme === "light" ? "#fff3e1" : "#2a1f16",
+          fontSize: "14px",
+          color: t.muted,
+          boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ fontWeight: 600, color: t.text, marginBottom: "6px" }}>
+          Settings legend
+        </div>
+        <div>Quality weight: how much rating quality impacts Base.</div>
+        <div>Popularity weight: how much enrollments impact Base.</div>
+        <div>Freshness weight: how much recency impacts Base.</div>
+        <div>Editorial weight: multiplier applied to editorial boosts.</div>
+        <div>Quality floor: minimum rating required for promotion.</div>
+        <div>Promotion cap: maximum promoted courses per page.</div>
+        <div>Sponsored boost: boost applied to Sponsored courses.</div>
+        <div>Editor’s Choice boost: boost applied to Editor’s Choice.</div>
+        <div>Min ratings for confidence: rating count threshold.</div>
+        <div>Freshness max age (days): age at which freshness becomes 0.</div>
+      </div>
 
       <section>
         <h2>Ranking Breakdown</h2>
@@ -118,21 +330,105 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
                 {new Date(course.lastUpdatedAt).toDateString()}
               </div>
               <div style={{ fontSize: "12px", color: t.muted }}>
-                Q={course.breakdown.qualityScore.toFixed(3)} · P=
-                {course.breakdown.popularityScore.toFixed(3)} · F=
-                {course.breakdown.freshnessScore.toFixed(3)} · E=
-                {course.breakdown.editorialBoost.toFixed(3)}
+                Calculated values:{" "}
+                <HoverLabel
+                  label="Q"
+                  description="Quality score: rating normalized to 0–1 and scaled by rating confidence."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.qualityScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="P"
+                  description="Popularity score: enrollments normalized across the dataset."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.popularityScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="F"
+                  description="Freshness score: recency of last update normalized to 0–1."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.freshnessScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="E"
+                  description="Editorial boost: extra weight for Sponsored or Editor’s Choice."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.editorialBoost.toFixed(3)}
+              </div>
+              <div style={{ marginTop: "6px", fontSize: "12px", color: t.muted }}>
+                Base formula: Base = (Q × wQ) + (P × wP) + (F × wF)
               </div>
               <div style={{ fontSize: "12px", color: t.muted }}>
-                Base={course.breakdown.baseScore.toFixed(3)} → Final=
-                {course.breakdown.finalScore.toFixed(3)}
+                Base calc: ({course.breakdown.qualityScore.toFixed(3)}×
+                {course.breakdown.qualityWeight.toFixed(2)}) + (
+                {course.breakdown.popularityScore.toFixed(3)}×
+                {course.breakdown.popularityWeight.toFixed(2)}) + (
+                {course.breakdown.freshnessScore.toFixed(3)}×
+                {course.breakdown.freshnessWeight.toFixed(2)}) ={" "}
+                {(
+                  course.breakdown.qualityScore *
+                  course.breakdown.qualityWeight
+                ).toFixed(3)}{" "}
+                +{" "}
+                {(
+                  course.breakdown.popularityScore *
+                  course.breakdown.popularityWeight
+                ).toFixed(3)}{" "}
+                +{" "}
+                {(
+                  course.breakdown.freshnessScore *
+                  course.breakdown.freshnessWeight
+                ).toFixed(3)}{" "}
+                = {course.breakdown.baseScore.toFixed(3)}
               </div>
               <div style={{ fontSize: "12px", color: t.muted }}>
-                {course.breakdown.formula}
+                <HoverLabel
+                  label="Base"
+                  description="Base score before editorial boost is applied."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.baseScore.toFixed(3)}
+              </div>
+              <div style={{ marginTop: "6px", fontSize: "12px", color: t.muted }}>
+                Final formula: Final = Base + (E ×{" "}
+                {course.breakdown.editorialWeight.toFixed(2)})
+              </div>
+              <div style={{ fontSize: "12px", color: t.muted }}>
+                Final calc: {course.breakdown.baseScore.toFixed(3)} + (
+                {course.breakdown.editorialBoost.toFixed(3)}×
+                {course.breakdown.editorialWeight.toFixed(2)}) ={" "}
+                {course.breakdown.baseScore.toFixed(3)} +{" "}
+                {(
+                  course.breakdown.editorialBoost *
+                  course.breakdown.editorialWeight
+                ).toFixed(3)}{" "}
+                = {course.breakdown.finalScore.toFixed(3)}
+              </div>
+              <div style={{ fontSize: "12px", color: t.muted }}>
+                <HoverLabel
+                  label="Final"
+                  description="Final score after adding editorial boost."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.finalScore.toFixed(3)}
               </div>
               {course.ratingAvg < qualityFloor && (
                 <div style={{ color: "#b00020", fontSize: "12px" }}>
-                  Warning: Quality too low for promotion
+                  Warning: Quality too low for promotion (uses raw ratingAvg:{" "}
+                  {course.ratingAvg.toFixed(2)} &lt; {qualityFloor.toFixed(2)})
                 </div>
               )}
             </div>
