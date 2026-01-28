@@ -243,22 +243,26 @@ export default function AdminView({
         }}
       >
         <h1 style={{ margin: 0 }}>Admin Panel</h1>
-        <button
-          type="button"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          style={{
-            height: "38px",
-            padding: "0 16px",
-            borderRadius: "999px",
-            border: `1px solid ${t.border}`,
-            background: t.card,
-            color: t.text,
-            cursor: "pointer",
-          }}
-        >
-          Switch to {theme === "dark" ? "light" : "dark"}
-        </button>
       </div>
+      <button
+        type="button"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          height: "38px",
+          padding: "0 16px",
+          borderRadius: "999px",
+          border: `1px solid ${t.border}`,
+          background: t.card,
+          color: t.text,
+          cursor: "pointer",
+          zIndex: 30,
+        }}
+      >
+        Switch to {theme === "dark" ? "light" : "dark"}
+      </button>
       <section
         style={{
           border: `1px solid ${t.border}`,
