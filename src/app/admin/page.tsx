@@ -1,20 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { rankCourses, type RankedCourse } from "@/lib/ranking";
-import CourseList from "@/components/CourseList";
 import TopNav from "@/components/TopNav";
+import AdminView from "@/app/admin/AdminView";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function Home() {
+export default async function AdminPage() {
   const settings = await prisma.settings.findFirst();
   const courses = await prisma.course.findMany();
 
   if (!settings) {
     return (
       <main style={{ padding: "32px", fontFamily: "Georgia, serif" }}>
-        <TopNav text="Go to admin view" href="/admin" />
-        <h1>Course List</h1>
+        <TopNav text="Go to user view" href="/" />
+        <h1>Admin</h1>
         <p>No settings found. Run the seed script.</p>
       </main>
     );
@@ -49,21 +49,23 @@ export default async function Home() {
       },
     })) as RankedCourse[],
     settings
-  ).slice(0, 20);
-
-  const categories = Array.from(
-    new Set(courses.map((course) => course.category))
-  ).sort();
+  );
 
   return (
     <div style={{ padding: "32px", fontFamily: "Georgia, serif" }}>
-      <TopNav text="Go to admin view" href="/admin" />
-      <CourseList
-        courses={ranked.map((course) => ({
-          ...course,
+      <TopNav text="Go to user view" href="/" />
+      <AdminView
+        settings={settings}
+        ranked={ranked.map((course) => ({
+          id: course.id,
+          title: course.title,
+          ratingAvg: course.ratingAvg,
+          ratingCount: course.ratingCount,
+          enrollments: course.enrollments,
           lastUpdatedAt: course.lastUpdatedAt.toISOString(),
+          breakdown: course.breakdown,
         }))}
-        categories={categories}
+        qualityFloor={settings.qualityFloor}
       />
     </div>
   );

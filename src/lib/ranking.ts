@@ -36,6 +36,8 @@ export type RankedCourse = {
   category: string;
   level: string;
   language: string;
+  priceCents: number;
+  hasPractice: boolean;
   ratingAvg: number;
   ratingCount: number;
   enrollments: number;

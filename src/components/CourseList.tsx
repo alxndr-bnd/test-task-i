@@ -18,6 +18,8 @@ type RankedCourseView = {
   category: string;
   level: string;
   language: string;
+  priceCents: number;
+  hasPractice: boolean;
   ratingAvg: number;
   ratingCount: number;
   enrollments: number;
@@ -57,14 +59,28 @@ const themeTokens = {
 } as const;
 
 export default function CourseList({ courses, categories }: Props) {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [priceFilter, setPriceFilter] = useState("All");
+  const [practiceFilter, setPracticeFilter] = useState("All");
+  const [sponsoredFilter, setSponsoredFilter] = useState("All");
+  const [legendOpen, setLegendOpen] = useState(true);
   const t = themeTokens[theme];
 
   const visible = useMemo(() => {
-    if (selectedCategory === "All") return courses;
-    return courses.filter((course) => course.category === selectedCategory);
-  }, [courses, selectedCategory]);
+    return courses.filter((course) => {
+      if (selectedCategory !== "All" && course.category !== selectedCategory) {
+        return false;
+      }
+      if (priceFilter === "Free" && course.priceCents !== 0) return false;
+      if (priceFilter === "Paid" && course.priceCents === 0) return false;
+      if (practiceFilter === "With" && !course.hasPractice) return false;
+      if (practiceFilter === "Without" && course.hasPractice) return false;
+      if (sponsoredFilter === "Sponsored" && !course.isSponsored) return false;
+      if (sponsoredFilter === "Organic" && course.isSponsored) return false;
+      return true;
+    });
+  }, [courses, selectedCategory, priceFilter, practiceFilter, sponsoredFilter]);
 
   return (
     <main
@@ -102,7 +118,7 @@ export default function CourseList({ courses, categories }: Props) {
                 padding: "6px 10px",
                 borderRadius: "8px",
                 border: `1px solid ${t.border}`,
-                background: t.card,
+        background: theme === "light" ? "#fff3e1" : "#2a1f16",
                 color: t.text,
               }}
             >
@@ -112,6 +128,63 @@ export default function CourseList({ courses, categories }: Props) {
                   {category}
                 </option>
               ))}
+            </select>
+          </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
+            Price
+            <select
+              value={priceFilter}
+              onChange={(event) => setPriceFilter(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Free">Free</option>
+              <option value="Paid">Paid</option>
+            </select>
+          </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
+            Practice
+            <select
+              value={practiceFilter}
+              onChange={(event) => setPracticeFilter(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="All">All</option>
+              <option value="With">With practice</option>
+              <option value="Without">Without practice</option>
+            </select>
+          </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
+            Sponsored
+            <select
+              value={sponsoredFilter}
+              onChange={(event) => setSponsoredFilter(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Sponsored">Sponsored</option>
+              <option value="Organic">Organic</option>
             </select>
           </label>
           <button
@@ -140,14 +213,16 @@ export default function CourseList({ courses, categories }: Props) {
               border: `1px solid ${t.border}`,
               borderRadius: "12px",
               padding: "12px 16px",
-              background: index < 3 ? t.highlight : t.card,
+              background: t.card,
             }}
           >
             <div style={{ fontWeight: 600, color: t.accent }}>
               #{index + 1} {course.title}
             </div>
             <div style={{ fontSize: "14px", color: t.muted }}>
-              {course.category} • {course.level} • {course.language}
+              {course.category} • {course.level} • {course.language} •{" "}
+              {course.priceCents === 0 ? "Free" : "Paid"} •{" "}
+              {course.hasPractice ? "With practice" : "No practice"}
             </div>
             <div style={{ fontSize: "13px", color: t.muted }}>
               Rating {course.ratingAvg.toFixed(1)} ({course.ratingCount}) •
@@ -184,6 +259,73 @@ export default function CourseList({ courses, categories }: Props) {
             </div>
           </div>
         ))}
+      </div>
+      <div
+        style={{
+          position: "fixed",
+          right: "20px",
+          top: "210px",
+          width: "340px",
+          padding: "16px",
+          borderRadius: "14px",
+          border: `1px solid ${t.border}`,
+          borderLeft: `6px solid ${t.accent}`,
+          background: theme === "light" ? "#fff3e1" : "#2a1f16",
+          fontSize: "14px",
+          color: t.muted,
+          boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: legendOpen ? "10px" : 0,
+          }}
+        >
+          <div style={{ fontWeight: 600, color: t.text }}>Ranking legend</div>
+          <button
+            type="button"
+            onClick={() => setLegendOpen((prev) => !prev)}
+            style={{
+              border: `1px solid ${t.border}`,
+              background: t.card,
+              color: t.text,
+              borderRadius: "8px",
+              padding: "2px 8px",
+              cursor: "pointer",
+            }}
+            aria-label={legendOpen ? "Collapse legend" : "Expand legend"}
+          >
+            {legendOpen ? "✕" : "▸"}
+          </button>
+        </div>
+        {legendOpen ? (
+          <>
+            <div>
+              Q = Quality score: rating normalized to 0–1 and scaled by rating
+              confidence.
+            </div>
+            <div>
+              P = Popularity score: enrollments normalized across the dataset.
+            </div>
+            <div>
+              F = Freshness score: recency of last update normalized to 0–1.
+            </div>
+            <div>
+              E = Editorial boost: extra weight for Sponsored or Editor’s Choice.
+            </div>
+            <div>
+              Base = weighted sum of Q, P, F before editorial boost is applied.
+            </div>
+            <div>Final = Base + (E × editorial weight).</div>
+          </>
+        ) : (
+          <div style={{ fontSize: "12px", color: t.muted }}>
+            Legend collapsed — click to expand.
+          </div>
+        )}
       </div>
     </main>
   );

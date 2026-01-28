@@ -36,16 +36,32 @@ const categories = [
 const languages = ["English", "Spanish", "German"];
 const levels = ["Beginner", "Intermediate", "Advanced"];
 
+const SEED = 20260128;
+const BASE_DATE = new Date("2026-01-28T00:00:00.000Z");
+
+const mulberry32 = (seed: number) => {
+  let t = seed;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const random = mulberry32(SEED);
+
 const rand = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
+  Math.floor(random() * (max - min + 1)) + min;
 
 const pick = <T,>(items: T[]) => items[rand(0, items.length - 1)];
 
-const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+const daysAgo = (n: number) =>
+  new Date(BASE_DATE.getTime() - n * 24 * 60 * 60 * 1000);
 
 const makeCourse = (index: number): CourseSeed => {
-  const isFree = Math.random() < 0.2;
-  const ratingAvg = Math.round((2.5 + Math.random() * 2.4) * 10) / 10;
+  const isFree = random() < 0.2;
+  const ratingAvg = Math.round((2.5 + random() * 2.4) * 10) / 10;
   const ratingCount = rand(5, 800);
   const enrollments = rand(20, 20000);
   const days = rand(0, 720);
@@ -58,13 +74,13 @@ const makeCourse = (index: number): CourseSeed => {
     priceCents: isFree ? 0 : rand(1999, 19999),
     isFree,
     durationMinutes: rand(60, 1200),
-    hasPractice: Math.random() < 0.5,
-    hasCertificate: Math.random() < 0.6,
-    isAccredited: Math.random() < 0.25,
-    isEditorsChoice: Math.random() < 0.15,
-    isSponsored: Math.random() < 0.15,
-    promoStart: Math.random() < 0.2 ? daysAgo(rand(1, 30)) : null,
-    promoEnd: Math.random() < 0.2 ? daysAgo(-rand(1, 30)) : null,
+    hasPractice: random() < 0.5,
+    hasCertificate: random() < 0.6,
+    isAccredited: random() < 0.25,
+    isEditorsChoice: random() < 0.15,
+    isSponsored: random() < 0.15,
+    promoStart: random() < 0.2 ? daysAgo(rand(1, 30)) : null,
+    promoEnd: random() < 0.2 ? daysAgo(-rand(1, 30)) : null,
     ratingAvg,
     ratingCount,
     enrollments,
