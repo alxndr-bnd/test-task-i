@@ -22,6 +22,7 @@ type CourseSeed = {
   ratingCount: number;
   enrollments: number;
   lastUpdatedAt: Date;
+  createdAt: Date;
 };
 
 const categories = [
@@ -79,13 +80,8 @@ const makeCourse = (index: number): CourseSeed => {
   const ratingAvg = Math.round((2.5 + random() * 2.4) * 10) / 10;
   const ratingCount = rand(5, 800);
   const enrollments = rand(20, 20000);
-  const days = rand(0, 720);
-  const promoState = rand(0, 2); // 0 none, 1 active, 2 expired
-  const promoStart =
-    promoState === 1 ? daysAgo(rand(1, 10)) : promoState === 2 ? daysAgo(40) : null;
-  const promoEnd =
-    promoState === 1 ? daysAgo(-rand(3, 14)) : promoState === 2 ? daysAgo(10) : null;
-
+  const updatedDaysAgo = rand(0, 720);
+  const createdDaysAgo = updatedDaysAgo + rand(0, 365);
   return {
     title: `Course ${index + 1}: ${pick([
       "Essentials",
@@ -104,12 +100,13 @@ const makeCourse = (index: number): CourseSeed => {
     isAccredited: random() < 0.3,
     isEditorsChoice: random() < 0.18,
     isSponsored: random() < 0.18,
-    promoStart,
-    promoEnd,
+    promoStart: null,
+    promoEnd: null,
     ratingAvg,
     ratingCount,
     enrollments,
-    lastUpdatedAt: daysAgo(days),
+    lastUpdatedAt: daysAgo(updatedDaysAgo),
+    createdAt: daysAgo(createdDaysAgo),
   };
 };
 
@@ -133,6 +130,7 @@ const edgeCases: CourseSeed[] = [
     ratingCount: 120,
     enrollments: 45,
     lastUpdatedAt: daysAgo(30),
+    createdAt: daysAgo(90),
   },
   {
     title: "Edge: High Enrollments, Average Rating",
@@ -153,6 +151,7 @@ const edgeCases: CourseSeed[] = [
     ratingCount: 900,
     enrollments: 18000,
     lastUpdatedAt: daysAgo(120),
+    createdAt: daysAgo(240),
   },
   {
     title: "Edge: Recently Updated, Low Popularity",
@@ -173,6 +172,7 @@ const edgeCases: CourseSeed[] = [
     ratingCount: 60,
     enrollments: 120,
     lastUpdatedAt: daysAgo(2),
+    createdAt: daysAgo(180),
   },
   {
     title: "Edge: Popular but Outdated",
@@ -193,6 +193,7 @@ const edgeCases: CourseSeed[] = [
     ratingCount: 500,
     enrollments: 14000,
     lastUpdatedAt: daysAgo(650),
+    createdAt: daysAgo(700),
   },
   {
     title: "Edge: Sponsored Near Quality Floor",
@@ -213,6 +214,7 @@ const edgeCases: CourseSeed[] = [
     ratingCount: 40,
     enrollments: 600,
     lastUpdatedAt: daysAgo(40),
+    createdAt: daysAgo(120),
   },
 ];
 

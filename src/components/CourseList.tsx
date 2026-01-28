@@ -90,6 +90,9 @@ type RankedCourseView = {
   isSponsored: boolean;
   isEditorsChoice: boolean;
   isAccredited: boolean;
+  promoActive: boolean;
+  promoEligible: boolean;
+  promoApplied: boolean;
   finalScore: number;
   reason: string;
   breakdown: RankingBreakdownView;
@@ -127,6 +130,8 @@ export default function CourseList({ courses, categories }: Props) {
   const [priceFilter, setPriceFilter] = useState("All");
   const [practiceFilter, setPracticeFilter] = useState("All");
   const [sponsoredFilter, setSponsoredFilter] = useState("All");
+  const [editorsChoiceFilter, setEditorsChoiceFilter] = useState("All");
+  const [accreditedFilter, setAccreditedFilter] = useState("All");
   const [legendOpen, setLegendOpen] = useState(true);
   const [sortOption, setSortOption] = useState("rank");
   const t = themeTokens[theme];
@@ -153,6 +158,10 @@ export default function CourseList({ courses, categories }: Props) {
       if (practiceFilter === "Without" && course.hasPractice) return false;
       if (sponsoredFilter === "Sponsored" && !course.isSponsored) return false;
       if (sponsoredFilter === "Organic" && course.isSponsored) return false;
+      if (editorsChoiceFilter === "Yes" && !course.isEditorsChoice) return false;
+      if (editorsChoiceFilter === "No" && course.isEditorsChoice) return false;
+      if (accreditedFilter === "Yes" && !course.isAccredited) return false;
+      if (accreditedFilter === "No" && course.isAccredited) return false;
       return true;
     });
 
@@ -187,6 +196,8 @@ export default function CourseList({ courses, categories }: Props) {
     priceFilter,
     practiceFilter,
     sponsoredFilter,
+    editorsChoiceFilter,
+    accreditedFilter,
     sortOption,
   ]);
 
@@ -215,7 +226,16 @@ export default function CourseList({ courses, categories }: Props) {
             Ordered by {sortLabel}. Showing {visible.length}.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            flexWrap: "wrap",
+            rowGap: "8px",
+            maxWidth: "100%",
+          }}
+        >
           <label style={{ fontSize: "14px", color: t.muted }}>
             Category
             <select
@@ -226,7 +246,7 @@ export default function CourseList({ courses, categories }: Props) {
                 padding: "6px 10px",
                 borderRadius: "8px",
                 border: `1px solid ${t.border}`,
-        background: theme === "light" ? "#fff3e1" : "#2a1f16",
+                background: t.card,
                 color: t.text,
               }}
             >
@@ -296,6 +316,44 @@ export default function CourseList({ courses, categories }: Props) {
             </select>
           </label>
           <label style={{ fontSize: "14px", color: t.muted }}>
+            Editor’s Choice
+            <select
+              value={editorsChoiceFilter}
+              onChange={(event) => setEditorsChoiceFilter(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
+            Accredited
+            <select
+              value={accreditedFilter}
+              onChange={(event) => setAccreditedFilter(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="All">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
             Sort
             <select
               value={sortOption}
@@ -318,23 +376,27 @@ export default function CourseList({ courses, categories }: Props) {
               <option value="popularity">Popularity (enrollments)</option>
             </select>
           </label>
-          <button
-            type="button"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            style={{
-              height: "38px",
-              padding: "0 16px",
-              borderRadius: "999px",
-              border: `1px solid ${t.border}`,
-              background: t.card,
-              color: t.text,
-              cursor: "pointer",
-            }}
-          >
-            Switch to {theme === "dark" ? "light" : "dark"}
-          </button>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          height: "38px",
+          padding: "0 16px",
+          borderRadius: "999px",
+          border: `1px solid ${t.border}`,
+          background: t.card,
+          color: t.text,
+          cursor: "pointer",
+          zIndex: 30,
+        }}
+      >
+        Switch to {theme === "dark" ? "light" : "dark"}
+      </button>
 
       <div style={{ display: "grid", gap: "12px" }}>
         {visible.map((course, index) => (
@@ -349,6 +411,65 @@ export default function CourseList({ courses, categories }: Props) {
           >
             <div style={{ fontWeight: 600, color: t.accent }}>
               #{index + 1} {course.title}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "6px",
+                flexWrap: "wrap",
+                margin: "6px 0",
+              }}
+            >
+              {course.isSponsored && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    borderRadius: "999px",
+                    border: "1px solid #b45a2a",
+                    background: "#ffe1cc",
+                    color: "#7a3a16",
+                  }}
+                >
+                  Sponsored
+                  {!course.promoApplied &&
+                    (course.promoActive && course.promoEligible
+                      ? " (cap)"
+                      : " (inactive)")}
+                </span>
+              )}
+              {course.isEditorsChoice && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    borderRadius: "999px",
+                    border: "1px solid #2a6fb4",
+                    background: "#d9ebff",
+                    color: "#154a7a",
+                  }}
+                >
+                  Editor’s Choice
+                  {!course.promoApplied &&
+                    (course.promoActive && course.promoEligible
+                      ? " (cap)"
+                      : " (inactive)")}
+                </span>
+              )}
+              {course.isAccredited && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    borderRadius: "999px",
+                    border: "1px solid #2a8b5a",
+                    background: "#d8f3e3",
+                    color: "#1f5c3f",
+                  }}
+                >
+                  Accredited
+                </span>
+              )}
             </div>
             <div style={{ fontSize: "14px", color: t.muted }}>
               {course.category} • {course.priceCents === 0 ? "Free" : "Paid"} •{" "}
@@ -560,6 +681,12 @@ export default function CourseList({ courses, categories }: Props) {
               Base = weighted sum of Q, P, F before editorial boost is applied.
             </div>
             <div>Final = Base + (E × editorial weight).</div>
+            <div style={{ marginTop: "8px" }}>
+              Example Q: rating 4.5/5 ≈ 0.88, then scaled by confidence where
+              confidence = min(ratingCount / minRatingsForConfidence, 1.0).
+            </div>
+            <div>Example P: 12,000 enrollments close to dataset max ≈ 0.90.</div>
+            <div>Example F: updated 30 days ago on 365‑day scale ≈ 0.92.</div>
           </>
         ) : (
           <div style={{ fontSize: "12px", color: t.muted }}>

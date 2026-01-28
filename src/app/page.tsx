@@ -37,6 +37,8 @@ export default async function Home() {
       isSponsored: course.isSponsored,
       isEditorsChoice: course.isEditorsChoice,
       isAccredited: course.isAccredited,
+      promoStart: course.promoStart,
+      promoEnd: course.promoEnd,
       finalScore: 0,
       reason: "",
       breakdown: {

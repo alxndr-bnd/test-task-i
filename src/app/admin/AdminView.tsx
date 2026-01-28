@@ -180,10 +180,6 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
     );
   };
 
-  const toDateInput = (value: string | null) =>
-    value ? value.slice(0, 10) : "";
-
-  const fromDateInput = (value: string) => (value ? value : null);
 
   const saveCourse = async (course: RankedCourseView) => {
     setCourseStatus((prev) => ({ ...prev, [course.id]: "saving" }));
@@ -196,8 +192,8 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
           isSponsored: course.isSponsored,
           isEditorsChoice: course.isEditorsChoice,
           isAccredited: course.isAccredited,
-          promoStart: course.promoStart,
-          promoEnd: course.promoEnd,
+          promoStart: null,
+          promoEnd: null,
         }),
       });
       const data = await res.json();
@@ -363,6 +359,12 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
         <div>Editor’s Choice boost: boost applied to Editor’s Choice.</div>
         <div>Min ratings for confidence: rating count threshold.</div>
         <div>Freshness max age (days): age at which freshness becomes 0.</div>
+        <div style={{ marginTop: "8px" }}>
+          Example Q: rating 4.5/5 ≈ 0.88, then scaled by confidence where
+          confidence = min(ratingCount / minRatingsForConfidence, 1.0).
+        </div>
+        <div>Example P: 12,000 enrollments close to dataset max ≈ 0.90.</div>
+        <div>Example F: updated 30 days ago on 365‑day scale ≈ 0.92.</div>
       </div>
 
       <section>
@@ -431,48 +433,6 @@ export default function AdminView({ settings, ranked, qualityFloor }: Props) {
                     }
                   />{" "}
                   Accredited
-                </label>
-                <label>
-                  Promo start
-                  <input
-                    type="date"
-                    value={toDateInput(course.promoStart)}
-                    onChange={(event) =>
-                      updateCourse(course.id, {
-                        promoStart: fromDateInput(event.target.value),
-                      })
-                    }
-                    style={{
-                      display: "block",
-                      marginTop: "4px",
-                      border: `1px solid ${t.border}`,
-                      borderRadius: "6px",
-                      padding: "4px 6px",
-                      background: t.card,
-                      color: t.text,
-                    }}
-                  />
-                </label>
-                <label>
-                  Promo end
-                  <input
-                    type="date"
-                    value={toDateInput(course.promoEnd)}
-                    onChange={(event) =>
-                      updateCourse(course.id, {
-                        promoEnd: fromDateInput(event.target.value),
-                      })
-                    }
-                    style={{
-                      display: "block",
-                      marginTop: "4px",
-                      border: `1px solid ${t.border}`,
-                      borderRadius: "6px",
-                      padding: "4px 6px",
-                      background: t.card,
-                      color: t.text,
-                    }}
-                  />
                 </label>
                 <button
                   type="button"
