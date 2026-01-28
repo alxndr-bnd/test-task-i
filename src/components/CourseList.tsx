@@ -131,6 +131,17 @@ export default function CourseList({ courses, categories }: Props) {
   const [sortOption, setSortOption] = useState("rank");
   const t = themeTokens[theme];
 
+  const sortLabel =
+    {
+      rank: "FinalRankScore",
+      "price-asc": "Price (low to high)",
+      "price-desc": "Price (high to low)",
+      freshness: "Freshness (recent updates)",
+      newest: "Newest (created)",
+      rating: "Rating",
+      popularity: "Popularity (enrollments)",
+    }[sortOption] ?? "FinalRankScore";
+
   const visible = useMemo(() => {
     const filtered = courses.filter((course) => {
       if (selectedCategory !== "All" && course.category !== selectedCategory) {
@@ -201,7 +212,7 @@ export default function CourseList({ courses, categories }: Props) {
         <div>
           <h1 style={{ marginBottom: "10px" }}>Course List</h1>
           <p style={{ marginBottom: "20px", color: t.muted }}>
-            Ordered by FinalRankScore. Showing top 20.
+            Ordered by {sortLabel}. Showing {visible.length}.
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -341,141 +352,151 @@ export default function CourseList({ courses, categories }: Props) {
             </div>
             <div style={{ fontSize: "14px", color: t.muted }}>
               {course.category} • {course.priceCents === 0 ? "Free" : "Paid"} •{" "}
-              {course.hasPractice ? "With practice" : "No practice"}
+              {course.hasPractice ? "With practice" : "No practice"} •{" "}
+              {course.isSponsored ? "Sponsored" : "Organic"}
             </div>
             <div style={{ fontSize: "13px", color: t.muted }}>
               Rating {course.ratingAvg.toFixed(1)} ({course.ratingCount}) •
               Enrollments {course.enrollments} • Updated{" "}
-              {new Date(course.lastUpdatedAt).toDateString()}
+              {new Date(course.lastUpdatedAt).toDateString()} • Created{" "}
+              {new Date(course.createdAt).toDateString()}
             </div>
             <div style={{ marginTop: "6px", fontSize: "13px" }}>
               <strong>Why:</strong> {course.reason}
             </div>
-            <div
-              style={{
-                marginTop: "10px",
-                padding: "10px",
-                borderRadius: "8px",
-                border: `1px dashed ${t.border}`,
-                fontSize: "12px",
-                color: t.muted,
-              }}
-            >
-              <div>
-                Calculated values:{" "}
-                <HoverLabel
-                  label="Q"
-                  description="Quality score: rating normalized to 0–1 and scaled by rating confidence."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.qualityScore.toFixed(3)} ·{" "}
-                <HoverLabel
-                  label="P"
-                  description="Popularity score: enrollments normalized across the dataset."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.popularityScore.toFixed(3)} ·{" "}
-                <HoverLabel
-                  label="F"
-                  description="Freshness score: recency of last update normalized to 0–1."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.freshnessScore.toFixed(3)} ·{" "}
-                <HoverLabel
-                  label="E"
-                  description="Editorial boost: extra weight for Sponsored or Editor’s Choice."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.editorialBoost.toFixed(3)}
+            {sortOption === "rank" && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: `1px dashed ${t.border}`,
+                  fontSize: "12px",
+                  color: t.muted,
+                }}
+              >
+                <div
+                  style={{ fontWeight: 600, color: t.text, marginBottom: "6px" }}
+                >
+                  Ranking calculation (PoC-only transparency)
+                </div>
+                <div>
+                  Calculated values:{" "}
+                  <HoverLabel
+                    label="Q"
+                    description="Quality score: rating normalized to 0–1 and scaled by rating confidence."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.qualityScore.toFixed(3)} ·{" "}
+                  <HoverLabel
+                    label="P"
+                    description="Popularity score: enrollments normalized across the dataset."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.popularityScore.toFixed(3)} ·{" "}
+                  <HoverLabel
+                    label="F"
+                    description="Freshness score: recency of last update normalized to 0–1."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.freshnessScore.toFixed(3)} ·{" "}
+                  <HoverLabel
+                    label="E"
+                    description="Editorial boost: extra weight for Sponsored or Editor’s Choice."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.editorialBoost.toFixed(3)}
+                </div>
+                <div style={{ marginTop: "6px" }}>
+                  <span style={{ fontWeight: 600, color: t.text }}>
+                    Base formula:
+                  </span>{" "}
+                  <HoverLabel
+                    label="Base = (Q × wQ) + (P × wP) + (F × wF)"
+                    description="Weights are configurable in the admin panel."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                    href="/admin"
+                  />
+                </div>
+                <div style={{ fontSize: "12px", color: t.muted }}>
+                  Base calc: ({course.breakdown.qualityScore.toFixed(3)}×
+                  {course.breakdown.qualityWeight.toFixed(2)}) + (
+                  {course.breakdown.popularityScore.toFixed(3)}×
+                  {course.breakdown.popularityWeight.toFixed(2)}) + (
+                  {course.breakdown.freshnessScore.toFixed(3)}×
+                  {course.breakdown.freshnessWeight.toFixed(2)}) ={" "}
+                  {(
+                    course.breakdown.qualityScore *
+                    course.breakdown.qualityWeight
+                  ).toFixed(3)}{" "}
+                  +{" "}
+                  {(
+                    course.breakdown.popularityScore *
+                    course.breakdown.popularityWeight
+                  ).toFixed(3)}{" "}
+                  +{" "}
+                  {(
+                    course.breakdown.freshnessScore *
+                    course.breakdown.freshnessWeight
+                  ).toFixed(3)}{" "}
+                  = {course.breakdown.baseScore.toFixed(3)}
+                </div>
+                <div>
+                  <HoverLabel
+                    label="Base"
+                    description="Base score before editorial boost is applied."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.baseScore.toFixed(3)}
+                </div>
+                <div style={{ marginTop: "6px" }}>
+                  <span style={{ fontWeight: 600, color: t.text }}>
+                    Final formula:
+                  </span>{" "}
+                  <HoverLabel
+                    label={`Final = Base + (E × ${course.breakdown.editorialWeight.toFixed(2)})`}
+                    description="PoC-only transparency. Weights are configurable in the admin panel."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                    href="/admin"
+                  />
+                </div>
+                <div style={{ fontSize: "12px", color: t.muted }}>
+                  Final calc: {course.breakdown.baseScore.toFixed(3)} + (
+                  {course.breakdown.editorialBoost.toFixed(3)}×
+                  {course.breakdown.editorialWeight.toFixed(2)}) ={" "}
+                  {course.breakdown.baseScore.toFixed(3)} +{" "}
+                  {(
+                    course.breakdown.editorialBoost *
+                    course.breakdown.editorialWeight
+                  ).toFixed(3)}{" "}
+                  = {course.breakdown.finalScore.toFixed(3)}
+                </div>
+                <div>
+                  <HoverLabel
+                    label="Final"
+                    description="Final score after adding editorial boost."
+                    textColor={t.text}
+                    borderColor={t.border}
+                    bg={t.card}
+                  />
+                  ={course.breakdown.finalScore.toFixed(3)}
+                </div>
               </div>
-              <div style={{ marginTop: "6px" }}>
-                <span style={{ fontWeight: 600, color: t.text }}>
-                  Base formula:
-                </span>{" "}
-                <HoverLabel
-                  label="Base = (Q × wQ) + (P × wP) + (F × wF)"
-                  description="Weights are configurable in the admin panel."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                  href="/admin"
-                />
-              </div>
-              <div style={{ fontSize: "12px", color: t.muted }}>
-                Base calc: ({course.breakdown.qualityScore.toFixed(3)}×
-                {course.breakdown.qualityWeight.toFixed(2)}) + (
-                {course.breakdown.popularityScore.toFixed(3)}×
-                {course.breakdown.popularityWeight.toFixed(2)}) + (
-                {course.breakdown.freshnessScore.toFixed(3)}×
-                {course.breakdown.freshnessWeight.toFixed(2)}) ={" "}
-                {(
-                  course.breakdown.qualityScore * course.breakdown.qualityWeight
-                ).toFixed(3)}{" "}
-                +{" "}
-                {(
-                  course.breakdown.popularityScore *
-                  course.breakdown.popularityWeight
-                ).toFixed(3)}{" "}
-                +{" "}
-                {(
-                  course.breakdown.freshnessScore *
-                  course.breakdown.freshnessWeight
-                ).toFixed(3)}{" "}
-                = {course.breakdown.baseScore.toFixed(3)}
-              </div>
-              <div>
-                <HoverLabel
-                  label="Base"
-                  description="Base score before editorial boost is applied."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.baseScore.toFixed(3)}
-              </div>
-              <div style={{ marginTop: "6px" }}>
-                <span style={{ fontWeight: 600, color: t.text }}>
-                  Final formula:
-                </span>{" "}
-                <HoverLabel
-                  label={`Final = Base + (E × ${course.breakdown.editorialWeight.toFixed(2)})`}
-                  description="PoC-only transparency. Weights are configurable in the admin panel."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                  href="/admin"
-                />
-              </div>
-              <div style={{ fontSize: "12px", color: t.muted }}>
-                Final calc: {course.breakdown.baseScore.toFixed(3)} + (
-                {course.breakdown.editorialBoost.toFixed(3)}×
-                {course.breakdown.editorialWeight.toFixed(2)}) ={" "}
-                {course.breakdown.baseScore.toFixed(3)} +{" "}
-                {(
-                  course.breakdown.editorialBoost *
-                  course.breakdown.editorialWeight
-                ).toFixed(3)}{" "}
-                = {course.breakdown.finalScore.toFixed(3)}
-              </div>
-              <div>
-                <HoverLabel
-                  label="Final"
-                  description="Final score after adding editorial boost."
-                  textColor={t.text}
-                  borderColor={t.border}
-                  bg={t.card}
-                />
-                ={course.breakdown.finalScore.toFixed(3)}
-              </div>
-            </div>
+            )}
           </div>
         ))}
       </div>

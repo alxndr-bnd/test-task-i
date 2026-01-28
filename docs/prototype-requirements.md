@@ -148,6 +148,12 @@ Short, plain-language explanation:
 - “Recently updated”
 - “Sponsored course”
 
+PoC transparency additions (implemented):
+
+- Show calculated values Q / P / F / E with inline hover tooltips
+- Show Base and Final calculations step-by-step
+- Show formula line (PoC-only transparency) with link to admin weights
+
 Admin-facing
 
 Full transparency:
@@ -208,3 +214,22 @@ The fake dataset must allow reviewers to:
 - Confirm explainability messages match ranking outcomes
 
 This is not test data, but demonstration data.
+
+## 8. PoC UI extras (implemented)
+
+- User/admin switcher link at the top of both pages
+- Theme toggle on user page (default light)
+- Filters: Category, Price (Free/Paid), Practice (With/Without), Sponsored (Sponsored/Organic)
+- Sorting: FinalRankScore (default), Price (asc/desc), Freshness, Newest (created), Rating, Popularity
+- Floating legend on the right explaining Q/P/F/E, Base, Final
+
+## 9. PoC admin (current state)
+
+- Read-only admin page at `/admin`
+- Shows all ranking settings
+- Shows full per-course breakdown + warnings for quality floor violations
+
+## 10. PoC data determinism
+
+- Seeded data is deterministic across environments (fixed seed + fixed base date)
+- Seed runs on app start in production to ensure consistent demo data

@@ -54,7 +54,7 @@ export default async function Home() {
       },
     })) as RankedCourse[],
     settings
-  ).slice(0, 20);
+  );
 
   const categories = Array.from(
     new Set(courses.map((course) => course.category))
