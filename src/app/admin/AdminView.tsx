@@ -15,6 +15,10 @@ type RankedCourseView = {
     baseScore: number;
     finalScore: number;
     formula: string;
+    qualityWeight: number;
+    popularityWeight: number;
+    freshnessWeight: number;
+    editorialWeight: number;
   };
 };
 

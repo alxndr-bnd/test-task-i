@@ -59,6 +59,21 @@ const pick = <T,>(items: T[]) => items[rand(0, items.length - 1)];
 const daysAgo = (n: number) =>
   new Date(BASE_DATE.getTime() - n * 24 * 60 * 60 * 1000);
 
+const funTitles = [
+  "The Sleepy Compiler",
+  "Design for Humans, Not Robots",
+  "Marketing with Zero Buzzwords",
+  "Data Science for People Who Hate Math",
+  "Soft Skills for Loud People",
+  "Compliance Without Tears",
+  "The No-Panic Debugger",
+  "Pixels, but Make It Calm",
+  "Sales: The Polite Version",
+  "Intro to Not Overthinking",
+  "UX for Overcaffeinated Teams",
+  "Git: The Reconciliation Tour",
+];
+
 const makeCourse = (index: number): CourseSeed => {
   const isFree = random() < 0.2;
   const ratingAvg = Math.round((2.5 + random() * 2.4) * 10) / 10;
@@ -67,7 +82,12 @@ const makeCourse = (index: number): CourseSeed => {
   const days = rand(0, 720);
 
   return {
-    title: `Course ${index + 1}: ${pick(["Essentials", "Foundations", "Bootcamp", "Mastery"])}`,
+    title: `Course ${index + 1}: ${pick([
+      "Essentials",
+      "Foundations",
+      "Bootcamp",
+      "Mastery",
+    ])} — ${pick(funTitles)}`,
     category: pick(categories),
     language: pick(languages),
     level: pick(levels),

@@ -28,6 +28,10 @@ export type RankingBreakdown = {
   baseScore: number;
   finalScore: number;
   formula: string;
+  qualityWeight: number;
+  popularityWeight: number;
+  freshnessWeight: number;
+  editorialWeight: number;
 };
 
 export type RankedCourse = {
@@ -42,6 +46,7 @@ export type RankedCourse = {
   ratingCount: number;
   enrollments: number;
   lastUpdatedAt: Date;
+  createdAt: Date;
   isSponsored: boolean;
   isEditorsChoice: boolean;
   isAccredited: boolean;
@@ -145,6 +150,10 @@ export const rankCourses = (
           baseScore,
           finalScore,
           formula,
+          qualityWeight: settings.qualityWeight,
+          popularityWeight: settings.popularityWeight,
+          freshnessWeight: settings.freshnessWeight,
+          editorialWeight: settings.editorialWeight,
         },
       };
     })

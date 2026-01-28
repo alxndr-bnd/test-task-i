@@ -2,6 +2,64 @@
 
 import { useMemo, useState } from "react";
 
+type HoverLabelProps = {
+  label: string;
+  description: string;
+  textColor: string;
+  borderColor: string;
+  bg: string;
+  href?: string;
+};
+
+function HoverLabel({
+  label,
+  description,
+  textColor,
+  borderColor,
+  bg,
+  href,
+}: HoverLabelProps) {
+  const [open, setOpen] = useState(false);
+
+  const Tag = href ? "a" : "span";
+
+  return (
+    <span
+      style={{ position: "relative", fontWeight: 600, color: textColor }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Tag
+        href={href}
+        style={{ color: textColor, textDecoration: href ? "underline" : "none" }}
+      >
+        {label}
+      </Tag>
+      {open && (
+        <span
+          style={{
+            position: "absolute",
+            top: "-6px",
+            left: "12px",
+            transform: "translateY(-100%)",
+            background: bg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: "8px",
+            padding: "6px 8px",
+            fontSize: "11px",
+            whiteSpace: "nowrap",
+            zIndex: 20,
+            boxShadow: "0 6px 14px rgba(0,0,0,0.15)",
+          }}
+        >
+          {description}
+        </span>
+      )}
+    </span>
+  );
+}
+
 type RankingBreakdownView = {
   qualityScore: number;
   popularityScore: number;
@@ -10,6 +68,10 @@ type RankingBreakdownView = {
   baseScore: number;
   finalScore: number;
   formula: string;
+  qualityWeight: number;
+  popularityWeight: number;
+  freshnessWeight: number;
+  editorialWeight: number;
 };
 
 type RankedCourseView = {
@@ -24,6 +86,7 @@ type RankedCourseView = {
   ratingCount: number;
   enrollments: number;
   lastUpdatedAt: string;
+  createdAt: string;
   isSponsored: boolean;
   isEditorsChoice: boolean;
   isAccredited: boolean;
@@ -65,10 +128,11 @@ export default function CourseList({ courses, categories }: Props) {
   const [practiceFilter, setPracticeFilter] = useState("All");
   const [sponsoredFilter, setSponsoredFilter] = useState("All");
   const [legendOpen, setLegendOpen] = useState(true);
+  const [sortOption, setSortOption] = useState("rank");
   const t = themeTokens[theme];
 
   const visible = useMemo(() => {
-    return courses.filter((course) => {
+    const filtered = courses.filter((course) => {
       if (selectedCategory !== "All" && course.category !== selectedCategory) {
         return false;
       }
@@ -80,7 +144,40 @@ export default function CourseList({ courses, categories }: Props) {
       if (sponsoredFilter === "Organic" && course.isSponsored) return false;
       return true;
     });
-  }, [courses, selectedCategory, priceFilter, practiceFilter, sponsoredFilter]);
+
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "price-asc":
+          return a.priceCents - b.priceCents;
+        case "price-desc":
+          return b.priceCents - a.priceCents;
+        case "freshness":
+          return (
+            new Date(b.lastUpdatedAt).getTime() -
+            new Date(a.lastUpdatedAt).getTime()
+          );
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "rating":
+          return b.ratingAvg - a.ratingAvg;
+        case "popularity":
+          return b.enrollments - a.enrollments;
+        default:
+          return b.finalScore - a.finalScore;
+      }
+    });
+
+    return sorted;
+  }, [
+    courses,
+    selectedCategory,
+    priceFilter,
+    practiceFilter,
+    sponsoredFilter,
+    sortOption,
+  ]);
 
   return (
     <main
@@ -102,7 +199,7 @@ export default function CourseList({ courses, categories }: Props) {
         }}
       >
         <div>
-          <h1 style={{ marginBottom: "10px" }}>Ranked Course List</h1>
+          <h1 style={{ marginBottom: "10px" }}>Course List</h1>
           <p style={{ marginBottom: "20px", color: t.muted }}>
             Ordered by FinalRankScore. Showing top 20.
           </p>
@@ -187,6 +284,29 @@ export default function CourseList({ courses, categories }: Props) {
               <option value="Organic">Organic</option>
             </select>
           </label>
+          <label style={{ fontSize: "14px", color: t.muted }}>
+            Sort
+            <select
+              value={sortOption}
+              onChange={(event) => setSortOption(event.target.value)}
+              style={{
+                marginLeft: "8px",
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: `1px solid ${t.border}`,
+                background: t.card,
+                color: t.text,
+              }}
+            >
+              <option value="rank">FinalRankScore (default)</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="freshness">Freshness (recent updates)</option>
+              <option value="newest">Newest (created)</option>
+              <option value="rating">Rating</option>
+              <option value="popularity">Popularity (enrollments)</option>
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -220,8 +340,7 @@ export default function CourseList({ courses, categories }: Props) {
               #{index + 1} {course.title}
             </div>
             <div style={{ fontSize: "14px", color: t.muted }}>
-              {course.category} • {course.level} • {course.language} •{" "}
-              {course.priceCents === 0 ? "Free" : "Paid"} •{" "}
+              {course.category} • {course.priceCents === 0 ? "Free" : "Paid"} •{" "}
               {course.hasPractice ? "With practice" : "No practice"}
             </div>
             <div style={{ fontSize: "13px", color: t.muted }}>
@@ -242,19 +361,119 @@ export default function CourseList({ courses, categories }: Props) {
                 color: t.muted,
               }}
             >
-              <div style={{ fontWeight: 600, color: t.text }}>
-                Rank formula
-              </div>
-              <div>{course.breakdown.formula}</div>
               <div>
-                Q={course.breakdown.qualityScore.toFixed(3)} · P=
-                {course.breakdown.popularityScore.toFixed(3)} · F=
-                {course.breakdown.freshnessScore.toFixed(3)} · E=
-                {course.breakdown.editorialBoost.toFixed(3)}
+                Calculated values:{" "}
+                <HoverLabel
+                  label="Q"
+                  description="Quality score: rating normalized to 0–1 and scaled by rating confidence."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.qualityScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="P"
+                  description="Popularity score: enrollments normalized across the dataset."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.popularityScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="F"
+                  description="Freshness score: recency of last update normalized to 0–1."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.freshnessScore.toFixed(3)} ·{" "}
+                <HoverLabel
+                  label="E"
+                  description="Editorial boost: extra weight for Sponsored or Editor’s Choice."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.editorialBoost.toFixed(3)}
+              </div>
+              <div style={{ marginTop: "6px" }}>
+                <span style={{ fontWeight: 600, color: t.text }}>
+                  Base formula:
+                </span>{" "}
+                <HoverLabel
+                  label="Base = (Q × wQ) + (P × wP) + (F × wF)"
+                  description="Weights are configurable in the admin panel."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                  href="/admin"
+                />
+              </div>
+              <div style={{ fontSize: "12px", color: t.muted }}>
+                Base calc: ({course.breakdown.qualityScore.toFixed(3)}×
+                {course.breakdown.qualityWeight.toFixed(2)}) + (
+                {course.breakdown.popularityScore.toFixed(3)}×
+                {course.breakdown.popularityWeight.toFixed(2)}) + (
+                {course.breakdown.freshnessScore.toFixed(3)}×
+                {course.breakdown.freshnessWeight.toFixed(2)}) ={" "}
+                {(
+                  course.breakdown.qualityScore * course.breakdown.qualityWeight
+                ).toFixed(3)}{" "}
+                +{" "}
+                {(
+                  course.breakdown.popularityScore *
+                  course.breakdown.popularityWeight
+                ).toFixed(3)}{" "}
+                +{" "}
+                {(
+                  course.breakdown.freshnessScore *
+                  course.breakdown.freshnessWeight
+                ).toFixed(3)}{" "}
+                = {course.breakdown.baseScore.toFixed(3)}
               </div>
               <div>
-                Base={course.breakdown.baseScore.toFixed(3)} → Final=
-                {course.breakdown.finalScore.toFixed(3)}
+                <HoverLabel
+                  label="Base"
+                  description="Base score before editorial boost is applied."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.baseScore.toFixed(3)}
+              </div>
+              <div style={{ marginTop: "6px" }}>
+                <span style={{ fontWeight: 600, color: t.text }}>
+                  Final formula:
+                </span>{" "}
+                <HoverLabel
+                  label={`Final = Base + (E × ${course.breakdown.editorialWeight.toFixed(2)})`}
+                  description="PoC-only transparency. Weights are configurable in the admin panel."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                  href="/admin"
+                />
+              </div>
+              <div style={{ fontSize: "12px", color: t.muted }}>
+                Final calc: {course.breakdown.baseScore.toFixed(3)} + (
+                {course.breakdown.editorialBoost.toFixed(3)}×
+                {course.breakdown.editorialWeight.toFixed(2)}) ={" "}
+                {course.breakdown.baseScore.toFixed(3)} +{" "}
+                {(
+                  course.breakdown.editorialBoost *
+                  course.breakdown.editorialWeight
+                ).toFixed(3)}{" "}
+                = {course.breakdown.finalScore.toFixed(3)}
+              </div>
+              <div>
+                <HoverLabel
+                  label="Final"
+                  description="Final score after adding editorial boost."
+                  textColor={t.text}
+                  borderColor={t.border}
+                  bg={t.card}
+                />
+                ={course.breakdown.finalScore.toFixed(3)}
               </div>
             </div>
           </div>
@@ -264,7 +483,7 @@ export default function CourseList({ courses, categories }: Props) {
         style={{
           position: "fixed",
           right: "20px",
-          top: "210px",
+          top: "310px",
           width: "340px",
           padding: "16px",
           borderRadius: "14px",

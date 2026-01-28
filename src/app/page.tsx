@@ -33,6 +33,7 @@ export default async function Home() {
       ratingCount: course.ratingCount,
       enrollments: course.enrollments,
       lastUpdatedAt: course.lastUpdatedAt,
+      createdAt: course.createdAt,
       isSponsored: course.isSponsored,
       isEditorsChoice: course.isEditorsChoice,
       isAccredited: course.isAccredited,
@@ -46,6 +47,10 @@ export default async function Home() {
         baseScore: 0,
         finalScore: 0,
         formula: "",
+        qualityWeight: 0,
+        popularityWeight: 0,
+        freshnessWeight: 0,
+        editorialWeight: 0,
       },
     })) as RankedCourse[],
     settings
@@ -62,6 +67,7 @@ export default async function Home() {
         courses={ranked.map((course) => ({
           ...course,
           lastUpdatedAt: course.lastUpdatedAt.toISOString(),
+          createdAt: course.createdAt.toISOString(),
         }))}
         categories={categories}
       />
