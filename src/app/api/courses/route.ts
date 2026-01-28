@@ -7,8 +7,6 @@ export async function POST(request: Request) {
     isSponsored,
     isEditorsChoice,
     isAccredited,
-    promoStart,
-    promoEnd,
   } = body;
 
   const existing = await prisma.course.findUnique({ where: { id } });
@@ -28,27 +26,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const now = new Date();
-    const nextPromoStart = promoStart ? new Date(promoStart) : null;
-    const nextPromoEnd = promoEnd ? new Date(promoEnd) : null;
-    const isActive =
-      (isSponsored || isEditorsChoice) &&
-      (!nextPromoStart || nextPromoStart <= now) &&
-      (!nextPromoEnd || nextPromoEnd >= now);
-
-    if (isActive && settings.promotionCap > 0) {
+    if ((isSponsored || isEditorsChoice) && settings.promotionCap > 0) {
       const promotedCount = await prisma.course.count({
         where: {
           id: { not: id },
           OR: [{ isSponsored: true }, { isEditorsChoice: true }],
-          AND: [
-            {
-              OR: [{ promoStart: null }, { promoStart: { lte: now } }],
-            },
-            {
-              OR: [{ promoEnd: null }, { promoEnd: { gte: now } }],
-            },
-          ],
         },
       });
       if (promotedCount >= settings.promotionCap) {
@@ -69,8 +51,8 @@ export async function POST(request: Request) {
       isSponsored: Boolean(isSponsored),
       isEditorsChoice: Boolean(isEditorsChoice),
       isAccredited: Boolean(isAccredited),
-      promoStart: promoStart ? new Date(promoStart) : null,
-      promoEnd: promoEnd ? new Date(promoEnd) : null,
+      promoStart: null,
+      promoEnd: null,
     },
   });
 

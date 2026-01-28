@@ -50,6 +50,11 @@ export type RankedCourse = {
   isSponsored: boolean;
   isEditorsChoice: boolean;
   isAccredited: boolean;
+  promoStart: Date | null;
+  promoEnd: Date | null;
+  promoActive: boolean;
+  promoEligible: boolean;
+  promoApplied: boolean;
   finalScore: number;
   reason: string;
   breakdown: RankingBreakdown;
@@ -87,9 +92,10 @@ export const rankCourses = (
   const enrollments = courses.map((course) => course.enrollments);
   const minEnrollments = Math.min(...enrollments);
   const maxEnrollments = Math.max(...enrollments);
+  const computed = courses.map((course) => {
+    const promoActive = course.isSponsored || course.isEditorsChoice;
+    const promoEligible = course.ratingAvg >= settings.qualityFloor;
 
-  return courses
-    .map((course) => {
       const qualityScore = computeQualityScore(
         course.ratingAvg,
         course.ratingCount,
@@ -110,14 +116,9 @@ export const rankCourses = (
         popularityScore * settings.popularityWeight +
         freshnessScore * settings.freshnessWeight;
 
-      const belowQualityFloor = course.ratingAvg < settings.qualityFloor;
-
-      const editorialBoost = !belowQualityFloor
-        ? (course.isSponsored ? settings.sponsoredBoost : 0) +
-          (course.isEditorsChoice ? settings.editorsChoiceBoost : 0)
-        : 0;
-
-      const finalScore = baseScore + editorialBoost * settings.editorialWeight;
+      const editorialBoost =
+        (course.isSponsored ? settings.sponsoredBoost : 0) +
+        (course.isEditorsChoice ? settings.editorsChoiceBoost : 0);
 
       const reasonParts = [] as string[];
       if (course.isSponsored) reasonParts.push("Sponsored course");
@@ -138,9 +139,8 @@ export const rankCourses = (
         2
       )}) + (E*${settings.editorialWeight.toFixed(2)})`;
 
-      return {
+    return {
         ...course,
-        finalScore,
         reason: reasonParts[0] ?? "Balanced ranking",
         breakdown: {
           qualityScore,
@@ -148,12 +148,40 @@ export const rankCourses = (
           freshnessScore,
           editorialBoost,
           baseScore,
-          finalScore,
           formula,
           qualityWeight: settings.qualityWeight,
           popularityWeight: settings.popularityWeight,
           freshnessWeight: settings.freshnessWeight,
           editorialWeight: settings.editorialWeight,
+        },
+        promoActive,
+        promoEligible,
+        promoApplied: false,
+      };
+  });
+
+  const promoCandidates = computed
+    .filter((course) => course.promoActive && course.promoEligible)
+    .sort((a, b) => b.breakdown.baseScore - a.breakdown.baseScore);
+
+  const promoAllowed = new Set(
+    promoCandidates.slice(0, settings.promotionCap).map((course) => course.id)
+  );
+
+  return computed
+    .map((course) => {
+      const promoApplied = promoAllowed.has(course.id);
+      const editorialBoost = promoApplied ? course.breakdown.editorialBoost : 0;
+      const finalScore =
+        course.breakdown.baseScore + editorialBoost * settings.editorialWeight;
+
+      return {
+        ...course,
+        promoApplied,
+        finalScore,
+        breakdown: {
+          ...course.breakdown,
+          finalScore,
         },
       };
     })

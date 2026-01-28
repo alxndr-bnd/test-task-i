@@ -74,6 +74,7 @@ export default async function AdminPage() {
           breakdown: course.breakdown,
         }))}
         qualityFloor={settings.qualityFloor}
+        promoAppliedCount={ranked.filter((course) => course.promoApplied).length}
       />
     </div>
   );
